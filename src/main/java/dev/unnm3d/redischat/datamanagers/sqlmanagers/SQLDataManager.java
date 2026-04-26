@@ -97,6 +97,18 @@ public abstract class SQLDataManager extends PluginMessageManager implements Dat
                 player_name    varchar(16) not null,
                 primary key (player_name)
             );
+            """, """
+            create table if not exists private_messages_disabled_players
+            (
+                player_name    varchar(16) not null,
+                primary key (player_name)
+            );
+            """, """
+            create table if not exists chat_toggle_disabled_players
+            (
+                player_name    varchar(16) not null,
+                primary key (player_name)
+            );
             """
         };
     }
@@ -786,6 +798,92 @@ public abstract class SQLDataManager extends PluginMessageManager implements Dat
                 errWarn("Failed to update whitelist enabled player to database", e);
             }
         });
+    }
+
+    @Override
+    public CompletionStage<Set<String>> getPrivateMessagesDisabledPlayers() {
+        return CompletableFuture.supplyAsync(() -> {
+            try (Connection connection = getConnection()) {
+                try (PreparedStatement statement = connection.prepareStatement("""
+                        select player_name from private_messages_disabled_players;""")) {
+
+                    final ResultSet resultSet = statement.executeQuery();
+                    final Set<String> players = new HashSet<>();
+                    while (resultSet.next()) {
+                        players.add(resultSet.getString("player_name"));
+                    }
+                    return players;
+                }
+            } catch (SQLException e) {
+                errWarn("Failed to fetch private messages disabled players from database", e);
+            }
+            return Set.of();
+        }, plugin.getExecutorService());
+    }
+
+    @Override
+    public void setPrivateMessagesDisabledPlayer(@NotNull String playerName, boolean disabled) {
+        CompletableFuture.runAsync(() -> {
+            try (Connection connection = getConnection()) {
+                try (PreparedStatement statement = connection.prepareStatement(disabled ?
+                        "INSERT INTO private_messages_disabled_players (`player_name`) VALUES (?)" :
+                        "DELETE FROM private_messages_disabled_players WHERE player_name = ?;"
+                )) {
+                    statement.setString(1, playerName);
+
+                    if (statement.executeUpdate() == 0) {
+                        throw new SQLException("Failed to update private messages disabled player to database: " + statement);
+                    }
+                    sendPrivateMessagesDisabledUpdate(playerName, disabled);
+
+                }
+            } catch (SQLException e) {
+                errWarn("Failed to update private messages disabled player to database", e);
+            }
+        }, plugin.getExecutorService());
+    }
+
+    @Override
+    public CompletionStage<Set<String>> getPlayerChatDisabledPlayers() {
+        return CompletableFuture.supplyAsync(() -> {
+            try (Connection connection = getConnection()) {
+                try (PreparedStatement statement = connection.prepareStatement("""
+                        select player_name from chat_toggle_disabled_players;""")) {
+
+                    final ResultSet resultSet = statement.executeQuery();
+                    final Set<String> players = new HashSet<>();
+                    while (resultSet.next()) {
+                        players.add(resultSet.getString("player_name"));
+                    }
+                    return players;
+                }
+            } catch (SQLException e) {
+                errWarn("Failed to fetch player chat disabled players from database", e);
+            }
+            return Set.of();
+        }, plugin.getExecutorService());
+    }
+
+    @Override
+    public void setPlayerChatDisabledPlayer(@NotNull String playerName, boolean disabled) {
+        CompletableFuture.runAsync(() -> {
+            try (Connection connection = getConnection()) {
+                try (PreparedStatement statement = connection.prepareStatement(disabled ?
+                        "INSERT INTO chat_toggle_disabled_players (`player_name`) VALUES (?)" :
+                        "DELETE FROM chat_toggle_disabled_players WHERE player_name = ?;"
+                )) {
+                    statement.setString(1, playerName);
+
+                    if (statement.executeUpdate() == 0) {
+                        throw new SQLException("Failed to update player chat disabled player to database: " + statement);
+                    }
+                    sendPlayerChatDisabledUpdate(playerName, disabled);
+
+                }
+            } catch (SQLException e) {
+                errWarn("Failed to update player chat disabled player to database", e);
+            }
+        }, plugin.getExecutorService());
     }
 
     @Override

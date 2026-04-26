@@ -185,6 +185,8 @@ public final class RedisChat extends JavaPlugin {
         loadCommandAPICommand(new MsgCommand(this).getCommand());
         //loadUniformCommand(new UniformReplyCommand());
         loadCommandAPICommand(new ReplyCommand(this).getCommand());
+        loadCommandAPICommand(new MsgToggleCommand(this).getCommand());
+        loadCommandAPICommand(new ChatToggleCommand(this).getCommand());
         loadCommandAPICommand(new ChatAsCommand(this).getCommand());
         final BroadcastCommand broadcastCommand = new BroadcastCommand(this);
         loadCommandAPICommand(broadcastCommand.getBroadcastCommand());

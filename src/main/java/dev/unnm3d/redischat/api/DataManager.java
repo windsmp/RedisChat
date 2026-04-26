@@ -77,6 +77,14 @@ public interface DataManager {
 
     void setWhitelistEnabledPlayer(@NotNull String playerName, boolean enabled);
 
+    CompletionStage<Set<String>> getPrivateMessagesDisabledPlayers();
+
+    void setPrivateMessagesDisabledPlayer(@NotNull String playerName, boolean disabled);
+
+    CompletionStage<Set<String>> getPlayerChatDisabledPlayers();
+
+    void setPlayerChatDisabledPlayer(@NotNull String playerName, boolean disabled);
+
     void sendChatMessage(@NotNull ChatMessage chatMessage);
 
     void publishPlayerList(@NotNull List<String> playerNames);

@@ -55,9 +55,6 @@ public class MsgCommand {
 
                         plugin.getChannelManager().outgoingPrivateMessage(sender, receiverName, message);
 
-                        //Set reply name for /reply
-                        plugin.getDataManager().setReplyName(receiverName, sender.getName());
-
                     });
                 });
 

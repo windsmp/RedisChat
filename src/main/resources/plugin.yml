@@ -107,6 +107,12 @@ permissions:
   redischat.message:
     description: Allows to use the /msg command
     default: op
+  redischat.msgtoggle:
+    description: Allows to toggle private messages
+    default: op
+  redischat.chattoggle:
+    description: Allows to toggle incoming player chat messages
+    default: op
   redischat.ignore:
     description: Allows to use the /ignore command
     default: op
@@ -164,6 +170,8 @@ permissions:
       - redischat.broadcastraw
       - redischat.clearchat
       - redischat.message
+      - redischat.msgtoggle
+      - redischat.chattoggle
       - redischat.ignore
       - redischat.spycommand
       - redischat.announce
@@ -184,6 +192,8 @@ permissions:
     default: true
     children:
       - redischat.message
+      - redischat.msgtoggle
+      - redischat.chattoggle
       - redischat.ignore
       - redischat.use_emoji
       - redischat.showitem

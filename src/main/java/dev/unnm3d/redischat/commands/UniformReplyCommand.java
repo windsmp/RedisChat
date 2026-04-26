@@ -47,8 +47,6 @@ public class UniformReplyCommand implements RedisChatCommand {
                                 String content = commandContext.getArgument("content", String.class);
                                 plugin.getChannelManager().outgoingPrivateMessage(sender, receiverName, content);
 
-                                plugin.getDataManager().setReplyName(receiverName, sender.getName());
-
                             }, plugin.getExecutorService());
                 }), "content")
                 .build();

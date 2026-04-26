@@ -62,6 +62,82 @@ public abstract class RedisChatAPI {
     public abstract DataManager getDataManager();
 
     /**
+     * Check if private messages are disabled for a player.
+     *
+     * @param playerName The player name
+     * @return true if private messages are disabled for this player
+     */
+    public abstract boolean isPrivateMessagesDisabled(String playerName);
+
+    /**
+     * Set private messages state for a player.
+     *
+     * @param playerName The player name
+     * @param disabled   true to disable private messages, false to enable them
+     */
+    public abstract void setPrivateMessagesDisabled(String playerName, boolean disabled);
+
+    /**
+     * Enable private messages for a player.
+     *
+     * @param playerName The player name
+     */
+    public abstract void enablePrivateMessages(String playerName);
+
+    /**
+     * Disable private messages for a player.
+     *
+     * @param playerName The player name
+     */
+    public abstract void disablePrivateMessages(String playerName);
+
+    /**
+     * Toggle private messages for a player.
+     *
+     * @param playerName The player name
+     * @return true if private messages are disabled after toggling
+     */
+    public abstract boolean togglePrivateMessages(String playerName);
+
+    /**
+     * Check if channel chat messages sent by players are disabled for a player.
+     *
+     * @param playerName The player name
+     * @return true if player chat is disabled for this player
+     */
+    public abstract boolean isPlayerChatDisabled(String playerName);
+
+    /**
+     * Set channel chat visibility for a player.
+     *
+     * @param playerName The player name
+     * @param disabled   true to hide player-sent channel chat messages, false to show them
+     */
+    public abstract void setPlayerChatDisabled(String playerName, boolean disabled);
+
+    /**
+     * Enable player chat for a player.
+     *
+     * @param playerName The player name
+     */
+    public abstract void enablePlayerChat(String playerName);
+
+    /**
+     * Disable player chat for a player.
+     *
+     * @param playerName The player name
+     */
+    public abstract void disablePlayerChat(String playerName);
+
+    /**
+     * Toggle player chat visibility for a player.
+     *
+     * @param playerName The player name
+     * @return true if player chat is disabled after toggling
+     */
+    public abstract boolean togglePlayerChat(String playerName);
+
+    /**
      * Register a channel
      *
      * @param channel The channel to register

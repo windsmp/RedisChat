@@ -48,7 +48,7 @@ public abstract class PluginMessageManager {
             plugin.getChannelManager().sendGenericChat(gson.fromJson(messageString, ChatMessage.class));
         } else if (subchannel.equals(DataKey.PLAYERLIST.toString())) {
             if (plugin.getPlayerListManager() != null)
-                plugin.getPlayerListManager().updatePlayerList(Arrays.asList(messageString.split("§")));
+                plugin.getPlayerListManager().updatePlayerList(Arrays.asList(messageString.split("\u00A7")));
         }else if (subchannel.equals(DataKey.PLAYER_ACTIVE_CHANNEL_UPDATE.toString())) {
             final String[] splitMsg = messageString.split(";");
             if (splitMsg.length != 2) return;
@@ -71,10 +71,22 @@ public abstract class PluginMessageManager {
         } else if (subchannel.equals(DataKey.PLAYER_PLACEHOLDERS.toString())) {
             plugin.getPlaceholderManager().updatePlayerPlaceholders(messageString);
         } else if (subchannel.equals(DataKey.WHITELIST_ENABLED_UPDATE.toString())) {
-            if (messageString.startsWith("D§")) {
+            if (messageString.startsWith("D\u00A7")) {
                 plugin.getChannelManager().getMuteManager().whitelistEnabledUpdate(messageString.substring(2), false);
             } else {
                 plugin.getChannelManager().getMuteManager().whitelistEnabledUpdate(messageString, true);
+            }
+        } else if (subchannel.equals(DataKey.PRIVATE_MESSAGES_DISABLED_UPDATE.toString())) {
+            if (messageString.startsWith("D\u00A7")) {
+                plugin.getChannelManager().getMuteManager().privateMessagesDisabledUpdate(messageString.substring(2), false);
+            } else {
+                plugin.getChannelManager().getMuteManager().privateMessagesDisabledUpdate(messageString, true);
+            }
+        } else if (subchannel.equals(DataKey.PLAYER_CHAT_DISABLED_UPDATE.toString())) {
+            if (messageString.startsWith("D\u00A7")) {
+                plugin.getChannelManager().getMuteManager().playerChatDisabledUpdate(messageString.substring(2), false);
+            } else {
+                plugin.getChannelManager().getMuteManager().playerChatDisabledUpdate(messageString, true);
             }
         }
     }
@@ -99,7 +111,24 @@ public abstract class PluginMessageManager {
         out.writeUTF("Forward");
         out.writeUTF("ALL");
         out.writeUTF(DataKey.WHITELIST_ENABLED_UPDATE.toString());
-        out.writeUTF(enabled ? playerName : "D§" + playerName);
+        out.writeUTF(enabled ? playerName : "D\u00A7" + playerName);
+        sendPluginMessage(out.toByteArray());
+    }
+
+    public void sendPrivateMessagesDisabledUpdate(String playerName, boolean disabled) {
+        final ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF("Forward");
+        out.writeUTF("ALL");
+        out.writeUTF(DataKey.PRIVATE_MESSAGES_DISABLED_UPDATE.toString());
+        out.writeUTF(disabled ? playerName : "D\u00A7" + playerName);
+        sendPluginMessage(out.toByteArray());
+    }
+    public void sendPlayerChatDisabledUpdate(String playerName, boolean disabled) {
+        final ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF("Forward");
+        out.writeUTF("ALL");
+        out.writeUTF(DataKey.PLAYER_CHAT_DISABLED_UPDATE.toString());
+        out.writeUTF(disabled ? playerName : "D\u00A7" + playerName);
         sendPluginMessage(out.toByteArray());
     }
 
@@ -158,3 +187,4 @@ public abstract class PluginMessageManager {
         sendPluginMessage(out.toByteArray());
     }
 }
+

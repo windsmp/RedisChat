@@ -28,6 +28,16 @@ public class MuteManager {
     private final Set<String> whitelistEnabledPlayers;
 
     /**
+     * Players with private messages disabled.
+     */
+    private final Set<String> privateMessagesDisabledPlayers;
+
+    /**
+     * Players with player-sent channel chat disabled.
+     */
+    private final Set<String> playerChatDisabledPlayers;
+
+    /**
      * Key: Player name
      * Value: Set of muted player names
      */
@@ -37,6 +47,8 @@ public class MuteManager {
         this.plugin = plugin;
         this.channelMutedForPlayers = new ConcurrentHashMap<>();
         this.whitelistEnabledPlayers = ConcurrentHashMap.newKeySet();
+        this.privateMessagesDisabledPlayers = ConcurrentHashMap.newKeySet();
+        this.playerChatDisabledPlayers = ConcurrentHashMap.newKeySet();
         this.playersMutedForPlayers = new ConcurrentHashMap<>();
         reload();
     }
@@ -44,6 +56,9 @@ public class MuteManager {
     public void reload() {
         channelMutedForPlayers.clear();
         playersMutedForPlayers.clear();
+        whitelistEnabledPlayers.clear();
+        privateMessagesDisabledPlayers.clear();
+        playerChatDisabledPlayers.clear();
         plugin.getDataManager().getAllMutedEntities().thenAccept(stringSetMap -> {
             if (stringSetMap == null) return;
 
@@ -55,7 +70,21 @@ public class MuteManager {
                 }
             }
         });
-        plugin.getDataManager().getWhitelistEnabledPlayers().thenAccept(whitelistEnabledPlayers::addAll);
+        plugin.getDataManager().getWhitelistEnabledPlayers().thenAccept(players -> {
+            if (players != null) {
+                whitelistEnabledPlayers.addAll(players);
+            }
+        });
+        plugin.getDataManager().getPrivateMessagesDisabledPlayers().thenAccept(players -> {
+            if (players != null) {
+                privateMessagesDisabledPlayers.addAll(players);
+            }
+        });
+        plugin.getDataManager().getPlayerChatDisabledPlayers().thenAccept(players -> {
+            if (players != null) {
+                playerChatDisabledPlayers.addAll(players);
+            }
+        });
     }
 
 
@@ -231,6 +260,68 @@ public class MuteManager {
         } else {
             whitelistEnabledPlayers.remove(playerName);
         }
+    }
+
+    public boolean isPrivateMessagesDisabled(String playerName) {
+        return privateMessagesDisabledPlayers.contains(playerName);
+    }
+
+    /**
+     * @param playerName The player name
+     * @return true if private messages are disabled after toggle
+     */
+    public boolean togglePrivateMessages(String playerName) {
+        boolean disabled = !isPrivateMessagesDisabled(playerName);
+        setPrivateMessagesDisabled(playerName, disabled);
+        return disabled;
+    }
+
+    public void setPrivateMessagesDisabled(String playerName, boolean disabled) {
+        if (isPrivateMessagesDisabled(playerName) == disabled) {
+            return;
+        }
+
+        plugin.getDataManager().setPrivateMessagesDisabledPlayer(playerName, disabled);
+        privateMessagesDisabledUpdate(playerName, disabled);
+    }
+
+    public void privateMessagesDisabledUpdate(String playerName, boolean disabled) {
+        if (disabled) {
+            privateMessagesDisabledPlayers.add(playerName);
+            return;
+        }
+        privateMessagesDisabledPlayers.remove(playerName);
+    }
+
+    public boolean isPlayerChatDisabled(String playerName) {
+        return playerChatDisabledPlayers.contains(playerName);
+    }
+
+    /**
+     * @param playerName The player name
+     * @return true if player chat is disabled after toggle
+     */
+    public boolean togglePlayerChat(String playerName) {
+        boolean disabled = !isPlayerChatDisabled(playerName);
+        setPlayerChatDisabled(playerName, disabled);
+        return disabled;
+    }
+
+    public void setPlayerChatDisabled(String playerName, boolean disabled) {
+        if (isPlayerChatDisabled(playerName) == disabled) {
+            return;
+        }
+
+        plugin.getDataManager().setPlayerChatDisabledPlayer(playerName, disabled);
+        playerChatDisabledUpdate(playerName, disabled);
+    }
+
+    public void playerChatDisabledUpdate(String playerName, boolean disabled) {
+        if (disabled) {
+            playerChatDisabledPlayers.add(playerName);
+            return;
+        }
+        playerChatDisabledPlayers.remove(playerName);
     }
 
 

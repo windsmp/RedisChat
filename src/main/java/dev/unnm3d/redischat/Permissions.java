@@ -5,6 +5,8 @@ import lombok.Getter;
 @Getter
 public enum Permissions {
     MESSAGE("redischat.message"),
+    MSG_TOGGLE("redischat.msgtoggle"),
+    CHAT_TOGGLE("redischat.chattoggle"),
     MAIL_WRITE("redischat.mail.write"),
     MAIL_WRITE_PUBLIC("redischat.mail.writepublic"),
     MAIL_READ("redischat.mail"),

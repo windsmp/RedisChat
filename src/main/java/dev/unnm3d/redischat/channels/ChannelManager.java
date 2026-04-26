@@ -20,6 +20,8 @@ import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -81,6 +83,56 @@ public class ChannelManager extends RedisChatAPI {
     @Override
     public DataManager getDataManager() {
         return plugin.getDataManager();
+    }
+
+    @Override
+    public boolean isPrivateMessagesDisabled(String playerName) {
+        return muteManager.isPrivateMessagesDisabled(playerName);
+    }
+
+    @Override
+    public void setPrivateMessagesDisabled(String playerName, boolean disabled) {
+        muteManager.setPrivateMessagesDisabled(playerName, disabled);
+    }
+
+    @Override
+    public void enablePrivateMessages(String playerName) {
+        muteManager.setPrivateMessagesDisabled(playerName, false);
+    }
+
+    @Override
+    public void disablePrivateMessages(String playerName) {
+        muteManager.setPrivateMessagesDisabled(playerName, true);
+    }
+
+    @Override
+    public boolean togglePrivateMessages(String playerName) {
+        return muteManager.togglePrivateMessages(playerName);
+    }
+
+    @Override
+    public boolean isPlayerChatDisabled(String playerName) {
+        return muteManager.isPlayerChatDisabled(playerName);
+    }
+
+    @Override
+    public void setPlayerChatDisabled(String playerName, boolean disabled) {
+        muteManager.setPlayerChatDisabled(playerName, disabled);
+    }
+
+    @Override
+    public void enablePlayerChat(String playerName) {
+        muteManager.setPlayerChatDisabled(playerName, false);
+    }
+
+    @Override
+    public void disablePlayerChat(String playerName) {
+        muteManager.setPlayerChatDisabled(playerName, true);
+    }
+
+    @Override
+    public boolean togglePlayerChat(String playerName) {
+        return muteManager.togglePlayerChat(playerName);
     }
 
     @Override
@@ -244,6 +296,12 @@ public class ChannelManager extends RedisChatAPI {
      * @param message      The message to be sent
      */
     public void outgoingPrivateMessage(@NotNull CommandSender sender, @NotNull String receiverName, @NotNull String message) {
+        if (muteManager.isPrivateMessagesDisabled(receiverName)) {
+            plugin.messages.sendMessage(sender,
+                    plugin.messages.receiver_private_messages_disabled.replace("%player%", receiverName));
+            return;
+        }
+
         final ChatFormat chatFormat = plugin.config.getChatFormat(sender);
 
         ChatMessage privateChatMessage = new ChatMessage(
@@ -305,6 +363,8 @@ public class ChannelManager extends RedisChatAPI {
 
         //Send the message to the receiver, the receiver format will be modified on the incoming filter
         plugin.getDataManager().sendChatMessage(privateChatMessage);
+        //Set reply name for /reply
+        plugin.getDataManager().setReplyName(receiverName, sender.getName());
     }
 
     @Override
@@ -323,6 +383,10 @@ public class ChannelManager extends RedisChatAPI {
 
 
         for (Player recipient : recipients) {
+            if (shouldHidePlayerChannelMessage(recipient, chatMessage)) {
+                continue;
+            }
+
             final FilterResult result = filterManager.filterMessage(recipient, chatMessage, AbstractFilter.Direction.INCOMING);
             if (result.filtered()) {
                 result.filteredReason().ifPresent(component ->
@@ -344,18 +408,14 @@ public class ChannelManager extends RedisChatAPI {
             //Mention sound
             if (getComponentProvider().purgeTags(chatMessage.getContent()).contains(recipient.getName())) {
                 if (!plugin.config.mentionSound.isEmpty()) {
-                    final String[] split = plugin.config.mentionSound.split(":");
-                    recipient.playSound(recipient.getLocation(), Sound.valueOf(split[0]),
-                            Float.parseFloat(split[1]), Float.parseFloat(split[2]));
+                    playConfiguredSound(recipient, plugin.config.mentionSound);
                 }
             }
 
             //Private message sound
             if (chatMessage.getReceiver().isPlayer()) {
                 if (!plugin.config.privateMessageSound.isEmpty()) {
-                    final String[] split = plugin.config.privateMessageSound.split(":");
-                    recipient.playSound(recipient.getLocation(), Sound.valueOf(split[0]),
-                            Float.parseFloat(split[1]), Float.parseFloat(split[2]));
+                    playConfiguredSound(recipient, plugin.config.privateMessageSound);
                 }
             }
 
@@ -379,6 +439,37 @@ public class ChannelManager extends RedisChatAPI {
 
     }
 
+    private void playConfiguredSound(@NotNull Player recipient, @NotNull String soundConfig) {
+        final String[] split = soundConfig.split(":");
+        if (split.length < 3) {
+            return;
+        }
+
+        final NamespacedKey key = NamespacedKey.fromString(split[0].trim().toLowerCase(Locale.ROOT));
+        if (key == null) {
+            if (plugin.config.debug) {
+                plugin.getLogger().warning("Invalid sound key in config: " + split[0]);
+            }
+            return;
+        }
+
+        final Sound sound = Registry.SOUNDS.get(key);
+        if (sound == null) {
+            if (plugin.config.debug) {
+                plugin.getLogger().warning("Unknown sound in config: " + split[0]);
+            }
+            return;
+        }
+
+        try {
+            recipient.playSound(recipient.getLocation(), sound, Float.parseFloat(split[1]), Float.parseFloat(split[2]));
+        } catch (NumberFormatException exception) {
+            if (plugin.config.debug) {
+                plugin.getLogger().warning("Invalid sound volume/pitch in config: " + soundConfig);
+            }
+        }
+    }
+
     private boolean checkProximity(Player recipient, ChatMessage chatMessage) {
         if (chatMessage.getReceiver().getProximityDistance() <= 0) return true;
         if (chatMessage.getSender().isServer()) {
@@ -390,6 +481,16 @@ public class ChannelManager extends RedisChatAPI {
         if (sender.isEmpty()) return false;
         if (!sender.get().getWorld().equals(recipient.getWorld())) return false;
         return sender.get().getLocation().distance(recipient.getLocation()) < chatMessage.getReceiver().getProximityDistance();
+    }
+
+    private boolean shouldHidePlayerChannelMessage(@NotNull Player recipient, @NotNull ChatMessage chatMessage) {
+        if (!muteManager.isPlayerChatDisabled(recipient.getName())) {
+            return false;
+        }
+        if (!chatMessage.getReceiver().isChannel()) {
+            return false;
+        }
+        return chatMessage.getSender().isPlayer() && !chatMessage.getSender().isServer();
     }
 
     @Override

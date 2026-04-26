@@ -27,6 +27,10 @@ public enum DataKey {
     MUTED_UPDATE("rchat:m_update"),
     WHITELIST_ENABLED_PLAYERS("rchat:wl_enabled"),
     WHITELIST_ENABLED_UPDATE("rchat:wl_enabled_update"),
+    PRIVATE_MESSAGES_DISABLED_PLAYERS("rchat:pm_disabled"),
+    PRIVATE_MESSAGES_DISABLED_UPDATE("rchat:pm_disabled_update"),
+    PLAYER_CHAT_DISABLED_PLAYERS("rchat:chat_disabled"),
+    PLAYER_CHAT_DISABLED_UPDATE("rchat:chat_disabled_update"),
     READ_MAIL_MAP("rchat:read_mails:"),
     DELETE_TAG("§del§"),
     ;

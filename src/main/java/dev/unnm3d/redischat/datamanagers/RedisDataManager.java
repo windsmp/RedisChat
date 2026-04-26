@@ -39,6 +39,8 @@ public class RedisDataManager extends RedisAbstract implements DataManager {
                 DataKey.MUTED_UPDATE.toString(),
                 DataKey.PLAYER_PLACEHOLDERS.toString(),
                 DataKey.WHITELIST_ENABLED_UPDATE.toString(),
+                DataKey.PRIVATE_MESSAGES_DISABLED_UPDATE.toString(),
+                DataKey.PLAYER_CHAT_DISABLED_UPDATE.toString(),
                 DataKey.MAIL_UPDATE_CHANNEL.toString());
     }
 
@@ -107,10 +109,22 @@ public class RedisDataManager extends RedisAbstract implements DataManager {
         } else if (channel.equals(DataKey.PLAYER_PLACEHOLDERS.toString())) {
             plugin.getPlaceholderManager().updatePlayerPlaceholders(message);
         } else if (channel.equals(DataKey.WHITELIST_ENABLED_UPDATE.toString())) {
-            if (message.startsWith("D§")) {
+            if (message.startsWith("D\u00A7")) {
                 plugin.getChannelManager().getMuteManager().whitelistEnabledUpdate(message.substring(2), false);
             } else {
                 plugin.getChannelManager().getMuteManager().whitelistEnabledUpdate(message, true);
+            }
+        } else if (channel.equals(DataKey.PRIVATE_MESSAGES_DISABLED_UPDATE.toString())) {
+            if (message.startsWith("D\u00A7")) {
+                plugin.getChannelManager().getMuteManager().privateMessagesDisabledUpdate(message.substring(2), false);
+            } else {
+                plugin.getChannelManager().getMuteManager().privateMessagesDisabledUpdate(message, true);
+            }
+        } else if (channel.equals(DataKey.PLAYER_CHAT_DISABLED_UPDATE.toString())) {
+            if (message.startsWith("D\u00A7")) {
+                plugin.getChannelManager().getMuteManager().playerChatDisabledUpdate(message.substring(2), false);
+            } else {
+                plugin.getChannelManager().getMuteManager().playerChatDisabledUpdate(message, true);
             }
         }
     }
@@ -600,7 +614,83 @@ public class RedisDataManager extends RedisAbstract implements DataManager {
                         plugin.getLogger().warning("Error setting whitelist enabled player");
                         return null;
                     });
-            return connection.publish(DataKey.WHITELIST_ENABLED_UPDATE.toString(), "D§" + playerName);
+            return connection.publish(DataKey.WHITELIST_ENABLED_UPDATE.toString(), "D\u00A7" + playerName);
+
+        });
+    }
+
+    @Override
+    public CompletionStage<Set<String>> getPrivateMessagesDisabledPlayers() {
+        return getConnectionAsync(connection ->
+                connection.smembers(DataKey.PRIVATE_MESSAGES_DISABLED_PLAYERS.toString())
+                        .thenApply(serializedSet -> {
+                            if (serializedSet == null) return new HashSet<String>();
+                            return serializedSet;
+                        })
+                        .exceptionally(throwable -> {
+                            throwable.printStackTrace();
+                            plugin.getLogger().warning("Error getting private messages disabled players");
+                            return null;
+                        }));
+    }
+
+    @Override
+    public void setPrivateMessagesDisabledPlayer(@NotNull String playerName, boolean disabled) {
+        getConnectionAsync(connection -> {
+            if (disabled) {
+                connection.sadd(DataKey.PRIVATE_MESSAGES_DISABLED_PLAYERS.toString(), playerName)
+                        .exceptionally(throwable -> {
+                            throwable.printStackTrace();
+                            plugin.getLogger().warning("Error setting private messages disabled player");
+                            return null;
+                        });
+                return connection.publish(DataKey.PRIVATE_MESSAGES_DISABLED_UPDATE.toString(), playerName);
+            }
+            connection.srem(DataKey.PRIVATE_MESSAGES_DISABLED_PLAYERS.toString(), playerName)
+                    .exceptionally(throwable -> {
+                        throwable.printStackTrace();
+                        plugin.getLogger().warning("Error setting private messages disabled player");
+                        return null;
+                    });
+            return connection.publish(DataKey.PRIVATE_MESSAGES_DISABLED_UPDATE.toString(), "D\u00A7" + playerName);
+
+        });
+    }
+
+    @Override
+    public CompletionStage<Set<String>> getPlayerChatDisabledPlayers() {
+        return getConnectionAsync(connection ->
+                connection.smembers(DataKey.PLAYER_CHAT_DISABLED_PLAYERS.toString())
+                        .thenApply(serializedSet -> {
+                            if (serializedSet == null) return new HashSet<String>();
+                            return serializedSet;
+                        })
+                        .exceptionally(throwable -> {
+                            throwable.printStackTrace();
+                            plugin.getLogger().warning("Error getting player chat disabled players");
+                            return null;
+                        }));
+    }
+
+    @Override
+    public void setPlayerChatDisabledPlayer(@NotNull String playerName, boolean disabled) {
+        getConnectionAsync(connection -> {
+            if (disabled) {
+                connection.sadd(DataKey.PLAYER_CHAT_DISABLED_PLAYERS.toString(), playerName)
+                        .exceptionally(throwable -> {
+                            throwable.printStackTrace();
+                            plugin.getLogger().warning("Error setting player chat disabled player");
+                            return null;
+                        });
+                return connection.publish(DataKey.PLAYER_CHAT_DISABLED_UPDATE.toString(), playerName);
+            }
+            connection.srem(DataKey.PLAYER_CHAT_DISABLED_PLAYERS.toString(), playerName)
+                    .exceptionally(throwable -> {
+                        throwable.printStackTrace();
+                        plugin.getLogger().warning("Error setting player chat disabled player");
+                        return null;
+                    });
+            return connection.publish(DataKey.PLAYER_CHAT_DISABLED_UPDATE.toString(), "D\u00A7" + playerName);
 
         });
     }

@@ -279,17 +279,18 @@ public final class Config implements ConfigValidator {
     @Comment("The [inv], [item] and [ec] placeholders will be considered as minimessage tags")
     public boolean interactiveChatNostalgia = true;
     @Comment("Command aliases (works for msg, mail, reply, staffchat and channel)")
-    public Map<String, List<String>> commandAliases = new HashMap<>(Map.of(
-            "msg", List.of("rmsg", "whisper", "tell", "w"),
-            "rmail", List.of("mail", "mails"),
-            "reply", List.of("r"),
-            "channel", List.of("ch", "channels"),
-            "staffchat", List.of("sc"),
-            "rmutechat", List.of("mutechat", "mute"),
-            "runmutechat", List.of("unmutechat", "unmute"),
-            "rbroadcast", List.of("bc", "broadcast"),
-            "rbroadcastraw", List.of("bcraw", "broadcastraw"),
-            "announcer", List.of("announce")
+    public Map<String, List<String>> commandAliases = new HashMap<>(Map.ofEntries(
+            Map.entry("msg", List.of("rmsg", "whisper", "tell", "w")),
+            Map.entry("rmail", List.of("mail", "mails")),
+            Map.entry("reply", List.of("r")),
+            Map.entry("channel", List.of("ch", "channels")),
+            Map.entry("chattoggle", List.of("togglechat")),
+            Map.entry("staffchat", List.of("sc")),
+            Map.entry("rmutechat", List.of("mutechat", "mute")),
+            Map.entry("runmutechat", List.of("unmutechat", "unmute")),
+            Map.entry("rbroadcast", List.of("bc", "broadcast")),
+            Map.entry("rbroadcastraw", List.of("bcraw", "broadcastraw")),
+            Map.entry("announcer", List.of("announce"))
     ));
 
     @Comment("Re-enables bukkit color glitches for colored placeholders")
@@ -347,6 +348,12 @@ public final class Config implements ConfigValidator {
         }
         if (!defaultFormat.mention_format().contains("%player%")) {
             Bukkit.getLogger().warning("Default mention format doesn't contain %player% placeholder");
+        }
+        if (!commandAliases.containsKey("chattoggle")) {
+            commandAliases = new HashMap<>(commandAliases);
+            commandAliases.put("chattoggle", List.of("togglechat"));
+            modified = true;
+            Bukkit.getLogger().warning("You didn't set any aliases for chattoggle, using default aliases");
         }
         if (!commandAliases.containsKey("mutechat")) {
             commandAliases = new HashMap<>(commandAliases);

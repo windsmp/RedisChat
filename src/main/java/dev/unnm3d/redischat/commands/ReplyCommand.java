@@ -35,9 +35,6 @@ public class ReplyCommand {
 
                                 plugin.getChannelManager().outgoingPrivateMessage(sender, receiver.get(), message);
 
-                                //Set reply name for /reply
-                                plugin.getDataManager().setReplyName(receiver.get(), sender.getName());
-
                                 if (plugin.config.debug)
                                     Bukkit.getLogger().info("ReplyCommand: " + (System.currentTimeMillis() - init) + "ms");
                             }, plugin.getExecutorService());

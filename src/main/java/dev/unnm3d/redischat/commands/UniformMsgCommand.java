@@ -58,9 +58,6 @@ public class UniformMsgCommand implements RedisChatCommand {
 
                     plugin.getChannelManager().outgoingPrivateMessage(commandContext.getSource(), target, content);
 
-                    //Set reply name for /reply
-                    plugin.getDataManager().setReplyName(target, commandContext.getSource().getName());
-
                 }), "target", "content")
                 .build();
     }

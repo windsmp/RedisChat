@@ -22,6 +22,11 @@ public final class Messages {
     public String announce_not_found = "<yellow>RedisChat</yellow> <gray>»</gray> <red>The announce %name% does not exist</red>";
     public String no_reply_found = "<yellow>RedisChat</yellow> <gray>»</gray> <red>You do not have any message to reply</red>";
     public String reply_not_online = "<yellow>RedisChat</yellow> <gray>»</gray> <red>%player% is not online</red>";
+    public String private_messages_disabled = "<yellow>RedisChat</yellow> <gray>»</gray> <red>Private messages are now disabled</red>";
+    public String private_messages_enabled = "<yellow>RedisChat</yellow> <gray>»</gray> <green>Private messages are now enabled</green>";
+    public String chat_disabled = "<yellow>RedisChat</yellow> <gray>»</gray> <red>Player chat is now disabled</red>";
+    public String chat_enabled = "<yellow>RedisChat</yellow> <gray>»</gray> <green>Player chat is now enabled</green>";
+    public String receiver_private_messages_disabled = "<yellow>RedisChat</yellow> <gray>»</gray> <red>%player% has private messages disabled</red>";
     public String rate_limited = "<yellow>RedisChat</yellow> <gray>»</gray> <red>You've been rate limited</red>";
     public String caps = "<yellow>RedisChat</yellow> <gray>»</gray> <red>Don't use caps</red>";
     @Comment("%list% is the list of players (separated by commas)")

@@ -10,13 +10,13 @@ version = '5.5.16'
 
 
 repositories {
+    mavenCentral()
     maven { url 'https://repo.papermc.io/repository/maven-public/' }
     maven { url 'https://repo.spicord.org/' }
     maven { url 'https://jitpack.io' }
     maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
     maven { url 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
     maven { url 'https://repo.xenondevs.xyz/releases' }
-    maven { url 'https://repo.maven.apache.org/maven2/' }
     maven { url "https://repo.william278.net/snapshots" }
     maven { url 'https://repo.essentialsx.net/releases/' }
     maven { url "https://repo.sayandev.org/snapshots" }
@@ -66,9 +66,11 @@ dependencies {
         exclude group: 'org.spigotmc', module: 'spigot-api'
     }
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+    testImplementation platform('org.junit:junit-bom:5.13.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'io.papermc.paper:paper-api:1.17.1-R0.1-SNAPSHOT'
     testImplementation("dev.jorel:commandapi-spigot-test-toolkit:11.1.0")
     testImplementation("dev.jorel:commandapi-paper-test-toolkit:11.1.0")
@@ -129,6 +131,11 @@ shadowJar {
     relocate 'com.github.Anon8281.universalScheduler', 'dev.unnm3d.redischat.libraries.universalScheduler'
 }
 
+jar {
+    archiveClassifier.set('plain')
+    dependsOn shadowJar
+}
+
 def sourceJavaVersion = 21
 def releaseJavaVersion = 21
 
@@ -174,5 +181,4 @@ publishing {
     }
 }
 
-jar.dependsOn shadowJar
 clean.delete "$rootDir/target"
