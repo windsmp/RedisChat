@@ -349,10 +349,6 @@ public final class RedisChat extends JavaPlugin {
     @Override
     public void onDisable() {
         getLogger().warning("RedisChat is disabling...");
-        safeShutdownStep("clearing invshare cache", () -> {
-            if (this.dataManager != null)
-                this.dataManager.clearInvShareCache();
-        });
         safeShutdownStep("stopping PaperUniform", () -> PaperUniform.getInstance(this).shutdown());
         // Commands are unregistered automatically by CommandAPI plugin
         safeShutdownStep("clearing registered commands", () -> {
@@ -364,15 +360,38 @@ public final class RedisChat extends JavaPlugin {
             if (this.playerListManager != null)
                 this.playerListManager.stop();
         });
+        safeShutdownStep("stopping join/quit pending tasks", () -> {
+            if (this.joinQuitManager != null)
+                this.joinQuitManager.stop();
+        });
         safeShutdownStep("stopping announcer tasks", () -> {
             if (this.announcerManager != null)
                 this.announcerManager.cancelAll();
         });
-        safeShutdownStep("shutting down async executor", this::shutdownExecutorService);
-        safeShutdownStep("closing data manager", () -> {
-            if (this.dataManager != null)
-                this.dataManager.close();
+        safeShutdownStep("clearing invshare cache", () -> {
+            if (this.dataManager == null) {
+                return;
+            }
+
+            // Redis invshare cache is distributed across servers; skipping network cleanup avoids
+            // connection attempts during shutdown that can block plugin disable.
+            if (this.config != null && this.config.getDataType() == Config.DataType.REDIS) {
+                return;
+            }
+
+            this.dataManager.clearInvShareCache();
         });
+        safeShutdownStep("closing data manager", () -> {
+            if (this.dataManager == null) {
+                return;
+            }
+            try {
+                this.dataManager.close();
+            } finally {
+                this.dataManager = null;
+            }
+        });
+        safeShutdownStep("shutting down async executor", this::shutdownExecutorService);
     }
 
     private ExecutorService createExecutorService(int threadCount) {

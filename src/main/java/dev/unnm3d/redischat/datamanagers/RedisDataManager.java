@@ -64,6 +64,9 @@ public class RedisDataManager extends RedisAbstract implements DataManager {
 
     @Override
     public void receiveMessage(String channel, String message) {
+        if (!plugin.isEnabled()) {
+            return;
+        }
         if (channel.equals(DataKey.CHAT_CHANNEL.toString())) {
             if (plugin.config.debug) {
                 plugin.getLogger().info("R1) Received message from redis: " + System.currentTimeMillis());
@@ -697,6 +700,9 @@ public class RedisDataManager extends RedisAbstract implements DataManager {
 
     @Override
     public void sendChatMessage(@NotNull ChatMessage packet) {
+        if (!plugin.isEnabled()) {
+            return;
+        }
         getConnectionPipeline(conn -> {
             String publishChannel = DataKey.CHAT_CHANNEL.toString();
             if (packet.getReceiver().isChannel()) {//If it's a channel message we need to increment the rate limit
@@ -738,6 +744,9 @@ public class RedisDataManager extends RedisAbstract implements DataManager {
 
     @Override
     public void sendRejoin(@NotNull String playerName) {
+        if (!plugin.isEnabled()) {
+            return;
+        }
         getConnectionAsync(connection ->
                 connection.publish(DataKey.REJOIN_CHANNEL.toString(), playerName)
                         .thenApply(integer -> {
@@ -757,6 +766,9 @@ public class RedisDataManager extends RedisAbstract implements DataManager {
 
     @Override
     public void publishPlayerList(@NotNull List<String> playerNames) {
+        if (!plugin.isEnabled()) {
+            return;
+        }
         getConnectionAsync(connection ->
                 connection.publish(DataKey.PLAYERLIST.toString(),
                                 String.join("§", playerNames))

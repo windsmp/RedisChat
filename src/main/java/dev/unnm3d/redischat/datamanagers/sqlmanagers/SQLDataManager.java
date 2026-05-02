@@ -797,7 +797,7 @@ public abstract class SQLDataManager extends PluginMessageManager implements Dat
             } catch (SQLException e) {
                 errWarn("Failed to update whitelist enabled player to database", e);
             }
-        });
+        }, plugin.getExecutorService());
     }
 
     @Override
@@ -996,5 +996,10 @@ public abstract class SQLDataManager extends PluginMessageManager implements Dat
         out.writeUTF(playerName);
 
         sendPluginMessage(out.toByteArray());
+    }
+
+    @Override
+    public void close() {
+        super.close();
     }
 }

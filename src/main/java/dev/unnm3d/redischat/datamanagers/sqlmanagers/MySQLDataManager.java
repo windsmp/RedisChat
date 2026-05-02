@@ -88,6 +88,7 @@ public class MySQLDataManager extends SQLDataManager {
 
     @Override
     public void close() {
+        super.close();
         dataSource.close();
     }
 }

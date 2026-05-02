@@ -325,6 +325,7 @@ public class SQLiteDataManager extends SQLDataManager {
 
     @Override
     public void close() {
+        super.close();
         dataSource.close();
     }
 }

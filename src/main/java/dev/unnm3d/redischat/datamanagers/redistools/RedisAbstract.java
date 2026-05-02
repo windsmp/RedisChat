@@ -11,8 +11,11 @@ import org.bukkit.Bukkit;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -20,6 +23,7 @@ import java.util.function.Function;
 public abstract class RedisAbstract {
     private final RoundRobinConnectionPool<String, String> roundRobinConnectionPool;
     private final ConcurrentHashMap<String[], StatefulRedisPubSubConnection<String, String>> pubSubConnections;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     protected RedisClient lettuceRedisClient;
 
     public RedisAbstract(RedisClient lettuceRedisClient, int poolSize) {
@@ -39,6 +43,9 @@ public abstract class RedisAbstract {
         pubSubConnection.addListener(new RedisPubSubListener<>() {
             @Override
             public void message(String channel, String message) {
+                if (closed.get()) {
+                    return;
+                }
                 receiveMessage(channel, message);
             }
 
@@ -70,31 +77,77 @@ public abstract class RedisAbstract {
     }
 
     public <T> CompletionStage<T> getConnectionAsync(Function<RedisAsyncCommands<String, String>, CompletionStage<T>> redisCallBack) {
-        return redisCallBack.apply(roundRobinConnectionPool.get().async());
+        if (closed.get()) {
+            return CompletableFuture.failedFuture(new IllegalStateException("Redis client is closed"));
+        }
+        try {
+            return redisCallBack.apply(roundRobinConnectionPool.get().async());
+        } catch (Throwable throwable) {
+            return CompletableFuture.failedFuture(throwable);
+        }
     }
 
     public <T> CompletionStage<T> getConnectionPipeline(Function<RedisAsyncCommands<String, String>, CompletionStage<T>> redisCallBack) {
-        StatefulRedisConnection<String, String> connection = roundRobinConnectionPool.get();
-        connection.setAutoFlushCommands(false);
-        CompletionStage<T> completionStage = redisCallBack.apply(connection.async());
-        connection.flushCommands();
-        connection.setAutoFlushCommands(true);
-        return completionStage;
+        if (closed.get()) {
+            return CompletableFuture.failedFuture(new IllegalStateException("Redis client is closed"));
+        }
+        try {
+            StatefulRedisConnection<String, String> connection = roundRobinConnectionPool.get();
+            connection.setAutoFlushCommands(false);
+            CompletionStage<T> completionStage = redisCallBack.apply(connection.async());
+            connection.flushCommands();
+            connection.setAutoFlushCommands(true);
+            return completionStage;
+        } catch (Throwable throwable) {
+            return CompletableFuture.failedFuture(throwable);
+        }
     }
 
     public Optional<List<Object>> executeTransaction(Consumer<RedisCommands<String, String>> redisCommandsConsumer) {
-        final RedisCommands<String, String> syncCommands = roundRobinConnectionPool.get().sync();
-        syncCommands.multi();
-        redisCommandsConsumer.accept(syncCommands);
-        final TransactionResult transactionResult = syncCommands.exec();
-        return Optional.ofNullable(transactionResult.wasDiscarded() ? null : transactionResult.stream().toList());
+        if (closed.get()) {
+            return Optional.empty();
+        }
+        try {
+            final RedisCommands<String, String> syncCommands = roundRobinConnectionPool.get().sync();
+            syncCommands.multi();
+            redisCommandsConsumer.accept(syncCommands);
+            final TransactionResult transactionResult = syncCommands.exec();
+            return Optional.ofNullable(transactionResult.wasDiscarded() ? null : transactionResult.stream().toList());
+        } catch (Throwable throwable) {
+            return Optional.empty();
+        }
     }
 
     public void close() {
-        pubSubConnections.values().forEach(StatefulRedisPubSubConnection::close);
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+
+        pubSubConnections.values().forEach(connection -> {
+            try {
+                connection.async().unsubscribe().toCompletableFuture().orTimeout(1, TimeUnit.SECONDS).join();
+            } catch (Throwable ignored) {
+            }
+
+            try {
+                connection.close();
+            } catch (Throwable ignored) {
+            }
+        });
+        pubSubConnections.clear();
         Bukkit.getLogger().info("Closing pubsub connection");
-        lettuceRedisClient.shutdown();
-        Bukkit.getLogger().info("Lettuce shutdown connection");
+
+        roundRobinConnectionPool.close();
+        Bukkit.getLogger().info("Closing pooled redis connections");
+
+        try {
+            lettuceRedisClient.shutdown(0, 2, TimeUnit.SECONDS);
+            Bukkit.getLogger().info("Lettuce shutdown connection");
+        } catch (Throwable throwable) {
+            Bukkit.getLogger().warning("Error while shutting down Lettuce: " + throwable.getMessage());
+        } finally {
+            lettuceRedisClient = null;
+        }
     }
 
 

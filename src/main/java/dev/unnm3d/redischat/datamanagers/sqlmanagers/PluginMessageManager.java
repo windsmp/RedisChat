@@ -10,28 +10,38 @@ import dev.unnm3d.redischat.api.objects.ChatMessage;
 import dev.unnm3d.redischat.datamanagers.DataKey;
 import dev.unnm3d.redischat.mail.Mail;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("UnstableApiUsage")
 public abstract class PluginMessageManager {
     private static final Gson gson = new Gson();
     protected final RedisChat plugin;
+    private final PluginMessageListener incomingListener;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
 
     protected PluginMessageManager(RedisChat plugin) {
         this.plugin = plugin;
-        plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, "BungeeCord");
-        plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin, "BungeeCord", (channel, player, message) -> {
-            if (!channel.equals("BungeeCord")) return;
+        this.incomingListener = (channel, player, message) -> {
+            if (closed.get() || !channel.equals("BungeeCord")) {
+                return;
+            }
             receivePluginMessage(message);
-        });
+        };
+        plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, "BungeeCord");
+        plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin, "BungeeCord", incomingListener);
     }
 
     protected void receivePluginMessage(byte[] message) {
+        if (closed.get()) {
+            return;
+        }
         final ByteArrayDataInput in = ByteStreams.newDataInput(message);
         final String subchannel = in.readUTF();
         final String messageString = in.readUTF();
@@ -172,6 +182,9 @@ public abstract class PluginMessageManager {
     }
 
     protected void sendPluginMessage(byte[] byteArray) {
+        if (closed.get()) {
+            return;
+        }
         final Iterator<? extends Player> iterator = plugin.getServer().getOnlinePlayers().iterator();
         if (!iterator.hasNext()) return;
         iterator.next().sendPluginMessage(plugin, "BungeeCord", byteArray);
@@ -185,6 +198,22 @@ public abstract class PluginMessageManager {
         out.writeUTF(playerName + ";" + (playerChannel == null ? DataKey.DELETE_TAG.toString() : playerChannel));
 
         sendPluginMessage(out.toByteArray());
+    }
+
+    public void close() {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+
+        try {
+            plugin.getServer().getMessenger().unregisterIncomingPluginChannel(plugin, "BungeeCord", incomingListener);
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            plugin.getServer().getMessenger().unregisterOutgoingPluginChannel(plugin, "BungeeCord");
+        } catch (Throwable ignored) {
+        }
     }
 }
 

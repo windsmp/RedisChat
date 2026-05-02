@@ -115,4 +115,9 @@ public class JoinQuitManager implements Listener {
         CompletableFuture<Void> future = findPlayerRequests.remove(playerName);
         if (future != null) future.complete(null);
     }
+
+    public void stop() {
+        findPlayerRequests.values().forEach(future -> future.complete(null));
+        findPlayerRequests.clear();
+    }
 }
